@@ -9,7 +9,7 @@ export const getUser = async (req, res) => {
 }
 
 export const createUser = async (req, res) => {
-	// const [rows] = await pool.query('SELECT * FROM users')
+	console.log(req.body)
 	res.send('creando un usaurio')
 }
 

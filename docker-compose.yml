@@ -9,5 +9,16 @@ services:
       MYSQL_DATABASE: tickeala
       MYSQL_USER: tickeala
       MYSQL_PASSWORD: tickeala
+    volumes:
+      - ./mysql:/var/lib/mysql
+      - ./database/db.sql:/docker-entrypoint-initdb.d/db.sql
     ports:
-      - "3306:3306"
+      - "3306:3306" 
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    restart: always
+    environment:
+      PMA_HOST: mysql_tickeala
+      PMA_PORT: 3306
+    ports:
+      - "8080:80"
