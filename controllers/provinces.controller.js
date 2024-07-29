@@ -1,11 +1,31 @@
-import axios from 'axios'
+import { ValidationErrror, NotFoundError } from '../errors.js'
 import { pool } from '../db.js'
 
-export const getProvinces = () => console.log('obtiene pcias')
+export const getProvinces = async (req, res) => {
+	const [rows] = await pool.query('SELECT * FROM provinces')
+	res.status(200).json(rows)
+}
 
 export const getProvince = async (req, res) => {
-	// const [ rows ] = await pool.query('SELECT * FROM users WHERE id = ?', [req.params.id])
-	res.send('obteniendo una provincia')
+	try {
+		const id = parseInt(req.params.id)
+		if (!Number.isSafeInteger(id) || id < 1) {
+			throw new ValidationErrror('Invalid id')
+		}
+		const [rows] = await pool.query('SELECT * FROM provinces WHERE id = ?', [req.params.id])
+		if (rows.length === 0) {
+			throw new NotFoundError('Province not found')
+		}
+		res.status(200).json(rows)
+	} catch (error) {
+		if (error instanceof ValidationErrror) {
+			res.status(400).json({ error: error.message })
+		} else if (error instanceof NotFoundError) {
+			res.status(404).json({ error: error.message })
+		} else {
+			res.status(500).json({ error: 'Internal server error' })
+		}
+	}
 }
 
 export const createProvince = async (req, res) => {
