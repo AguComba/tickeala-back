@@ -1,31 +1,81 @@
-import { ValidationErrror, NotFoundError } from '../errors.js'
+import { ValidationError, NotFoundError } from '../errors.js'
 import { pool } from '../db.js'
-import axios from 'axios'
-
-// * Obtiene todas las localidades de la api de georef ordenadas por nombre
-// ! https://apis.datos.gob.ar/georef/api/localidades?orden=nombre&max=5000&aplanar=true
-// * Obtiene todas las localidades de la api de georef ordenadas por nombre y por provincia
-// ! https://apis.datos.gob.ar/georef/api/localidades?orden=nombre&max=5000&provincia=06
 
 export const getCities = async (req, res) => {
 	try {
-		const { data } = await axios.get('https://apis.datos.gob.ar/georef/api/localidades?orden=nombre&max=5000&aplanar=true')
-		const localidades = data.localidades
-		const [rows] = await pool.query('SELECT * FROM provinces')
-		const provincias = rows
-
-		// Relaciono las localidades con sus provincias
-		// localidades.forEach((localidad) => {
-		// 	localidad.provincia = provinciasObj[localidad.provincia.id]
-		// })
-		console.log(provincias)
-		// Armo una query para insertar todas las localidades en la base de datos y relacionarlas con su provincia
-
-		// const query = 'INSERT INTO cities (name, zip_code, api_id, province_id) VALUES ?'
-		// const values = localidades.map(localidad => [localidad.id, localidad.nombre, '0000', localidad.id, localidad.provincia_id])
-
-		res.status(200).json(localidades)
+		const [rows] = await pool.query('SELECT *, provinces.name as province_name FROM cities JOIN provinces ON cities.province_id = provinces.id')
+		if (rows.length === 0) {
+			throw new NotFoundError('No se encontraron ciudades')
+		}
+		//Retorno de las ciudades con el nombre de la provincia y la cantidad de ciudades
+		res.json({ count: rows.length, cities: rows })
 	} catch (error) {
-		res.status(500).json({ error })
+		if (error instanceof NotFoundError) {
+			res.status(404).json({ error: error.message })
+		} else {
+			res.status(500).json({ error: error.message })
+		}
+	}
+}
+
+export const getCityById = async (req, res) => {
+	const { id } = req.params
+	try {
+		if (!Number.isSafeInteger(parseInt(id)) || parseInt(id) < 1) {
+			throw new ValidationError('ID inválido')
+		}
+		const [rows] = await pool.query(
+			`
+            SELECT cities.*, provinces.name as province_name 
+            FROM cities 
+            JOIN provinces ON cities.province_id = provinces.id 
+            WHERE cities.id = ?
+        `,
+			[id]
+		)
+		if (rows.length === 0) {
+			throw new NotFoundError('Ciudad no encontrada')
+		}
+		res.json({ count: rows.length, city: rows[0] })
+	} catch (error) {
+		if (error instanceof ValidationError) {
+			res.status(400).json({ error: error.message })
+		}
+		if (error instanceof NotFoundError) {
+			res.status(404).json({ error: error.message })
+		} else {
+			res.status(500).json({ error: error.message })
+		}
+	}
+}
+
+export const getCitiesByProvince = async (req, res) => {
+	const { provinceId } = req.params
+	try {
+		if (!Number.isSafeInteger(parseInt(provinceId)) || parseInt(provinceId) < 1) {
+			throw new ValidationError(['ID inválido'])
+		}
+		const cities = await pool.query(
+			`
+			SELECT cities.*, provinces.name as province_name 
+			FROM cities 
+			JOIN provinces ON cities.province_id = provinces.id 
+			WHERE cities.province_id = ?
+		`,
+			[provinceId]
+		)
+		if (cities[0].length === 0) {
+			throw new NotFoundError('No se encontraron ciudades')
+		}
+		res.json({ count: cities[0].length, cities: cities[0] })
+	} catch (error) {
+		if (error instanceof ValidationError) {
+			res.status(400).json({ error: error.message })
+		}
+		if (error instanceof NotFoundError) {
+			res.status(404).json({ error: error.message })
+		} else {
+			res.status(500).json({ error: error.message })
+		}
 	}
 }

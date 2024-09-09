@@ -1,9 +1,7 @@
-version: '3.1'
-
 services:
   mysql_tickeala:
     image: mysql:lts 
-    restart: always
+    # restart: always
     environment:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: tickeala
@@ -16,7 +14,7 @@ services:
       - "3306:3306" 
   phpmyadmin:
     image: phpmyadmin/phpmyadmin
-    restart: always
+    # restart: always
     environment:
       PMA_HOST: mysql_tickeala
       PMA_PORT: 3306

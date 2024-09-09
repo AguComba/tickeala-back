@@ -10,10 +10,10 @@ const app = express()
 
 app.use(express.json())
 
-app.use(indexRoutes)
-app.use(usersRoutes)
-app.use(provincesRoutes)
-app.use(citiesRoutes)
+app.use('/api', indexRoutes)
+app.use('/api', provincesRoutes)
+app.use('/api', citiesRoutes)
+app.use('/api', usersRoutes)
 
 app.listen(PORT, () => {
 	console.log(`Server is running on port ${PORT}`)
